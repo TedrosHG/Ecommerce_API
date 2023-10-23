@@ -1,13 +1,15 @@
 const router = require('express').Router()
-const User = require('../models/User')
 //const CryptoJS = require('crypto-js')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+
+const User = require('../models/User')
 
 router.get('/', async (req,res)=>{
     try {
         const user = await User.find().select('-password')
         if(!user){
-            return res.status(404).json({msg:'No users found'})
+            return res.status(404).send("Hello")
         }else{
             res.status(200).json(user)
         }
@@ -49,8 +51,18 @@ router.post('/login',async (req,res)=>{
         if(!passwords){
             return res.status(401).json({msg:"Invalid credentials: password"})
         }
+        
+        const accessToken = jwt.sign(
+            {
+                id: user._id,
+                isAdmin: user.isAdmin
+            },
+            process.env.JWT_SEC,
+            {expiresIn:'3d'}
+            )
+
         const {password, ...others} = user._doc
-        res.status(200).json(others)
+        res.status(200).json({...others, accessToken})
         
     } catch (error) {
         res.status(500).json(error)
